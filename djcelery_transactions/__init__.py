@@ -1,4 +1,5 @@
 # coding=utf-8
+from celery import current_app
 from celery.task import task as base_task, Task
 import djcelery_transactions.transaction_signals
 from django.db import transaction
@@ -47,7 +48,8 @@ class PostTransactionTask(Task):
         # Delay the task unless the client requested otherwise or transactions
         # aren't being managed (i.e. the signal handlers won't send the task).
         after_transaction = kwargs.pop("after_transaction", True)
-        delay_task = after_transaction and transaction.is_managed()
+        delay_task = after_transaction and transaction.is_managed() and \
+                     not current_app.conf.CELERY_ALWAYS_EAGER
 
         if delay_task:
             _get_task_queue().append((cls, args, kwargs))
